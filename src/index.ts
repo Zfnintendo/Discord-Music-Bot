@@ -49,38 +49,18 @@ for (const folder of commandFolders) {
 }
 // Commands //
 
-// Client actions //
-client.on("clientReady", async (c) => {
-    console.log(`${c.user.username} is online!`);
-});
-
-client.on(Events.InteractionCreate, async (interaction) => {
-	if (!interaction.isChatInputCommand()) return; 
-    const command = client.commands.get(interaction.commandName);
-
-    if (!command) {
-        console.error(`No command matching ${interaction.commandName} was found.`);
-		return;
-    }
-
-	try {
-		await command.execute(interaction);
-	} catch (error) {
-		console.error(error);
-		if (interaction.replied || interaction.deferred) {
-			await interaction.followUp({
-				content: 'There was an error while executing this command!',
-				flags: MessageFlags.Ephemeral,
-			});
-		} else {
-			await interaction.reply({
-				content: 'There was an error while executing this command!',
-				flags: MessageFlags.Ephemeral,
-			});
-		}
+// Client events //
+const eventsPath = fileURLToPath(new URL("events", import.meta.url));
+const eventFiles = fs.readdirSync(eventsPath).filter((file) => file.endsWith(extension) && !file.endsWith(".d.ts"));
+for (const file of eventFiles) {
+	const filePath = path.join(eventsPath, file);
+	const event = require(filePath);
+	if (event.once) {
+		client.once(event.name, (...args) => event.execute(...args));
+	} else {
+		client.on(event.name, (...args) => event.execute(...args));
 	}
-});
-
+}
 // Client Actions //
 
 // login client //
