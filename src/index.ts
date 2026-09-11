@@ -1,5 +1,7 @@
 // imports //
-import "dotenv/config";
+import dotenv from "dotenv";
+dotenv.config();
+
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
