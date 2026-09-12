@@ -3,7 +3,7 @@ import dotenv from "dotenv";
 dotenv.config();
 import fs from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 
 // .env stuff
 const token = process.env.DISCORD_TOKEN;
@@ -14,17 +14,19 @@ if (!clientId) {throw new Error("No client id!")}
 const commands = [];
 // Grab all the command folders from the commands directory you created earlier
 const foldersPath = fileURLToPath(new URL("./", import.meta.url));
-const commandFolders = fs.readdirSync(foldersPath);
+const commandFolders = fs.readdirSync(foldersPath, { withFileTypes: true });
+const extension = import.meta.url.endsWith(".ts") ? ".ts" : ".js";
 
 for (const folder of commandFolders) {
-	// Grab all the command files from the commands directory you created earlier
-	const commandsPath = path.join(foldersPath, folder);
-	const commandFiles = fs.readdirSync(commandsPath).filter((file) => file.endsWith('.js'));
+    if (!folder.isDirectory()) continue;
+
+    const commandsPath = path.join(foldersPath, folder.name);
+    const commandFiles = fs.readdirSync(commandsPath).filter((file) => file.endsWith(extension) && !file.endsWith(".d.ts"));
 	// Grab the SlashCommandBuilder#toJSON() output of each command's data for deployment
 	for (const file of commandFiles) {
 		const filePath = path.join(commandsPath, file);
-		const command = require(filePath);
-		if ('data' in command && 'execute' in command) {
+		const { default: command } = await import(pathToFileURL(filePath).href);
+		if (command?.data && typeof command.execute === "function") {
 			commands.push(command.data.toJSON());
 		} else {
 			console.log(`[WARNING] The command at ${filePath} is missing a required "data" or "execute" property.`);

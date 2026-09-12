@@ -5,14 +5,14 @@ dotenv.config();
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
-import { Client, MessageFlags, Collection, Events} from "discord.js";
+import { Client, Collection} from "discord.js";
 import pingCommand from "./commands/utility/PingPong.js";
-// imports
+// imports //
 
 // tokens //
 const discordToken = process.env.DISCORD_TOKEN;
 if (!discordToken) {throw new Error("No Discord Token!")}
-// tokens
+// tokens //
 
 // Client Setup //
 const client = Object.assign(
@@ -31,6 +31,8 @@ const commandFolders = fs.readdirSync(foldersPath, { withFileTypes: true });
 const extension = import.meta.url.endsWith(".ts") ? ".ts" : ".js";
 
 for (const folder of commandFolders) {
+    if (!folder.isDirectory()) continue;
+    
     const commandsPath = path.join(foldersPath, folder.name);
     const commandFiles = fs.readdirSync(commandsPath).filter((file) => file.endsWith(extension) && !file.endsWith(".d.ts"));
 
@@ -54,7 +56,7 @@ const eventsPath = fileURLToPath(new URL("events", import.meta.url));
 const eventFiles = fs.readdirSync(eventsPath).filter((file) => file.endsWith(extension) && !file.endsWith(".d.ts"));
 for (const file of eventFiles) {
 	const filePath = path.join(eventsPath, file);
-	const event = require(filePath);
+	const { default: event } = await import(pathToFileURL(filePath).href);
 	if (event.once) {
 		client.once(event.name, (...args) => event.execute(...args));
 	} else {
